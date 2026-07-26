@@ -8,6 +8,10 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "200mb",
     },
+    // Enables instrumentation.ts, which registers process-level error
+    // handlers so a stray dropped-DB-connection error can't crash the whole
+    // server (see instrumentation.ts for why this matters).
+    instrumentationHook: true,
   },
 };
 
