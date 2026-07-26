@@ -1,0 +1,37 @@
+{
+  "name": "Smartech Hub",
+  "short_name": "Smartech",
+  "description": "Smart Knowledge & Project Hub — PKM and Project Incubator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#190019",
+  "theme_color": "#190019",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "share_target": {
+    "action": "/api/ingest/download",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "media",
+          "accept": ["application/pdf", "video/mp4", "image/*"]
+        }
+      ]
+    }
+  }
+}

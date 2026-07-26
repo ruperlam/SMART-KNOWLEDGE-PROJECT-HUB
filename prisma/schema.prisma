@@ -1,0 +1,87 @@
+// Smartech Hub — Prisma schema
+// Production datasource: PostgreSQL (Neon free tier). See DEPLOYMENT.md.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: ReadStatus/SourceType are plain Strings (not native enums) so the
+// same schema also works unchanged against SQLite in other environments.
+// Values still follow the spec's enum set: ReadStatus = UNREAD | IN_PROGRESS
+// | READ | ARCHIVED; SourceType = TIKTOK | FACEBOOK_REELS | THREADS |
+// YOUTUBE | PDF | EXCEL | WORD | OTHER.
+
+// Generic key/value store for server-side app state that must survive
+// redeploys on hosts with an ephemeral filesystem (e.g. the Google OAuth
+// token, previously written to a local .google-token.json file).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Topic {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  driveFolderId String? // Google Drive folder id mirroring this topic (lazy-created)
+  items         Item[]
+  projects      Project[]
+}
+
+model Channel {
+  id         String     @id @default(uuid())
+  name       String
+  sourceType String
+  items      Item[]
+}
+
+model Item {
+  id           String     @id @default(uuid())
+  title        String
+  sourceType   String
+  originalUrl  String?
+  storagePath  String?
+  fileSizeMb   Float?     @default(0)
+  thumbnailUrl String?
+  status       String     @default("UNREAD")
+
+  channelId    String
+  channel      Channel    @relation(fields: [channelId], references: [id])
+  topicId      String
+  topic        Topic      @relation(fields: [topicId], references: [id])
+  projectId    String?
+  project      Project?   @relation(fields: [projectId], references: [id])
+
+  addedAt      DateTime   @default(now())
+  readAt       DateTime?
+  slaDays      Int        @default(7)
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  steps       String // JSON-encoded string[] (SQLite has no native array type)
+  progress    Int      @default(0)
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id])
+  items       Item[]
+  createdAt   DateTime @default(now())
+}
+
+model UserPreferenceRule {
+  id               String   @id @default(uuid())
+  keyword          String   @unique
+  preferredTopicId String
+  confidence       Float    @default(1.0)
+  updatedAt        DateTime @updatedAt
+}

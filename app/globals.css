@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #190019;
+  color: #fbe4d8;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #190019;
+}
+::-webkit-scrollbar-thumb {
+  background: #854f6c;
+  border-radius: 8px;
+}
+
+@layer components {
+  .bento-card {
+    @apply rounded-bento bg-card-bg/70 backdrop-blur-md border border-accent-mauve/30 shadow-neumorph transition-transform duration-200;
+  }
+  .bento-card:hover {
+    @apply -translate-y-1 border-accent-blush/50;
+  }
+  .sla-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}

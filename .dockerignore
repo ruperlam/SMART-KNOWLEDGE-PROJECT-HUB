@@ -1,0 +1,13 @@
+node_modules
+.next
+dev.db
+dev.db-journal
+.env
+.env.local
+public/generated
+public/local-media
+.google-token.json
+.ingest-staging
+.git
+run-demo.command
+*.log
