@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
@@ -41,7 +42,9 @@ export default async function RootLayout({
     <html lang="vi" className={`${outfit.variable} ${jakarta.variable}`}>
       <body className="font-body bg-bg-dark min-h-screen">
         <div className="flex min-h-screen">
-          <Sidebar topics={topics} />
+          <Suspense fallback={null}>
+            <Sidebar topics={topics} />
+          </Suspense>
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </body>
