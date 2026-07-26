@@ -27,19 +27,34 @@ export default async function Dashboard({
   const status = searchParams.status;
   const q = searchParams.q?.trim();
 
-  const [allTopicItems, topics, projects, activeTopic, driveConnected] = await Promise.all([
-    // Full item set for this topic (unfiltered by status/q) — used to compute
-    // stable stat-card counts regardless of the active filter/search.
-    prisma.item.findMany({
-      where: topicId ? { topicId } : undefined,
-      include: { channel: true, topic: true },
-      orderBy: { addedAt: "desc" },
-    }),
-    prisma.topic.findMany({ orderBy: { name: "asc" } }),
-    prisma.project.findMany({ select: { id: true, title: true, topicId: true } }),
-    topicId ? prisma.topic.findUnique({ where: { id: topicId } }) : null,
-    isDriveConnected(),
-  ]);
+  // Defense in depth: lib/prisma.ts already retries queries that fail due to
+  // Neon's compute waking up from auto-suspend, but if that ever still loses
+  // the race, fall back to a friendly empty state instead of crashing the
+  // whole page render (which Render's proxy surfaces as a 502).
+  let allTopicItems: BentoItem[] = [];
+  let topics: { id: string; name: string }[] = [];
+  let projects: { id: string; title: string; topicId: string }[] = [];
+  let activeTopic: { id: string; name: string } | null = null;
+  let driveConnected = false;
+  let loadError = false;
+
+  try {
+    [allTopicItems, topics, projects, activeTopic, driveConnected] = await Promise.all([
+      // Full item set for this topic (unfiltered by status/q) — used to compute
+      // stable stat-card counts regardless of the active filter/search.
+      prisma.item.findMany({
+        where: topicId ? { topicId } : undefined,
+        include: { channel: true, topic: true },
+        orderBy: { addedAt: "desc" },
+      }) as Promise<BentoItem[]>,
+      prisma.topic.findMany({ orderBy: { name: "asc" } }),
+      prisma.project.findMany({ select: { id: true, title: true, topicId: true } }),
+      topicId ? prisma.topic.findUnique({ where: { id: topicId } }) : null,
+      isDriveConnected(),
+    ]);
+  } catch {
+    loadError = true;
+  }
 
   const items = (allTopicItems as BentoItem[]).filter((item) => {
     if (status && item.status !== status) return false;
@@ -64,6 +79,16 @@ export default async function Dashboard({
           {activeTopic ? activeTopic.name : "Dashboard"}
         </h1>
       </header>
+
+      {loadError && (
+        <div className="bento-card p-4 text-sm text-accent-rose border border-accent-rose/40">
+          Database vừa "thức dậy" sau một lúc không hoạt động, có thể mất vài giây.{" "}
+          <a href="?" className="underline font-medium">
+            Tải lại trang
+          </a>
+          .
+        </div>
+      )}
 
       <DriveStatusBanner
         connected={driveConnected}

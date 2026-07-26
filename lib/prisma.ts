@@ -13,6 +13,8 @@ function isClosedConnectionError(err: unknown): boolean {
   return message.includes("kind: Closed") || message.includes("Error in PostgreSQL connection");
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function createPrismaClient() {
   const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -22,13 +24,18 @@ function createPrismaClient() {
     query: {
       $allModels: {
         async $allOperations({ args, query }) {
-          try {
-            return await query(args);
-          } catch (err) {
-            if (isClosedConnectionError(err)) {
+          // Up to 3 attempts total. Neon's compute can take a moment to wake
+          // back up after auto-suspending, so later retries wait a bit longer
+          // instead of immediately reusing a connection that may still be
+          // mid-reconnect.
+          const delays = [300, 800];
+          for (let attempt = 0; ; attempt++) {
+            try {
               return await query(args);
+            } catch (err) {
+              if (!isClosedConnectionError(err) || attempt >= delays.length) throw err;
+              await sleep(delays[attempt]);
             }
-            throw err;
           }
         },
       },
